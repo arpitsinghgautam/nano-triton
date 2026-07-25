@@ -9,6 +9,13 @@ parity with real Triton and 80%+ of its tensor-core matmul throughput.
 *Small enough to read in an afternoon, real enough to benchmark.*
 
 <p align="center">
+  <a href="https://pypi.org/project/nano-triton/"><img src="https://img.shields.io/pypi/v/nano-triton?color=0f766e" alt="PyPI"></a>
+  <img src="https://img.shields.io/badge/tests-176-0f766e" alt="tests">
+  <img src="https://img.shields.io/badge/license-MIT-0f766e" alt="MIT">
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/nano-triton/"><b>PyPI</b></a> |
   <a href="https://arpitsinghgautam.github.io/nano-triton/"><b>Project site</b></a> |
   <a href="docs/OVERVIEW.md">The full story, from zero</a> |
   <a href="#benchmarks">Benchmarks</a> |
@@ -54,7 +61,15 @@ repo rebuilds the whole two-layer stack in miniature:
 ## Quick start
 
 ```
-pip install -e .              # needs torch + an NVIDIA GPU + CUDA toolkit
+pip install nano-triton       # needs torch + an NVIDIA GPU + CUDA toolkit
+```
+
+That installs both `newt` and `deuteron`. To hack on the source instead:
+
+```
+git clone https://github.com/arpitsinghgautam/nano-triton
+cd nano-triton
+pip install -e .
 python -m pytest tests -q     # 176 tests (GPU ones self-skip without CUDA)
 ```
 

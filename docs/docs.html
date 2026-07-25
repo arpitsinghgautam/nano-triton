@@ -44,9 +44,12 @@
 </header>
 
 <section id="start">
+<pre><code>pip install nano-triton       <span class="c"># needs torch + an NVIDIA GPU + CUDA toolkit</span>
+<span class="c"># installs both newt and deuteron</span></code></pre>
+<p>Or clone and run from source:</p>
 <pre><code>git clone https://github.com/arpitsinghgautam/nano-triton
-<span class="k">cd</span> newt
-pip install -e .              <span class="c"># needs torch + an NVIDIA GPU + CUDA toolkit</span>
+<span class="k">cd</span> nano-triton
+pip install -e .
 python -m pytest tests -q     <span class="c"># 176 tests (GPU ones self-skip without CUDA)</span>
 python examples/01_vector_add.py</code></pre>
 </section>

@@ -12,14 +12,15 @@ parity with real Triton and 80%+ of its tensor-core matmul throughput.
   <a href="https://pypi.org/project/nano-triton/"><img src="https://img.shields.io/pypi/v/nano-triton?color=0f766e" alt="PyPI"></a>
   <img src="https://img.shields.io/badge/tests-176-0f766e" alt="tests">
   <img src="https://img.shields.io/badge/license-MIT-0f766e" alt="MIT">
+  <a href="https://colab.research.google.com/github/arpitsinghgautam/nano-triton/blob/main/examples/demo.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
 </p>
 
 <p align="center">
   <a href="https://pypi.org/project/nano-triton/"><b>PyPI</b></a> |
+  <a href="https://colab.research.google.com/github/arpitsinghgautam/nano-triton/blob/main/examples/demo.ipynb"><b>Demo notebook</b></a> |
   <a href="https://arpitsinghgautam.github.io/nano-triton/"><b>Project site</b></a> |
   <a href="docs/OVERVIEW.md">The full story, from zero</a> |
-  <a href="#benchmarks">Benchmarks</a> |
-  <a href="#quick-start">Quick start</a>
+  <a href="#benchmarks">Benchmarks</a>
 </p>
 
 ## What this is

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "nano-triton"
 version = "0.1.0"
 description = "A nano-Triton (newt) and a nano-Helion (deuteron): tile DSLs JIT-compiled to CUDA via NVRTC"
-readme = "README.md"
+readme = "PYPI.md"
 requires-python = ">=3.10"
 dependencies = ["torch"]
 license = { text = "MIT" }
@@ -24,7 +24,9 @@ classifiers = [
 ]
 
 [project.urls]
+Homepage = "https://arpitsinghgautam.me/nano-triton/"
 Repository = "https://github.com/arpitsinghgautam/nano-triton"
+Documentation = "https://arpitsinghgautam.me/nano-triton/"
 
 [tool.setuptools.packages.find]
 include = ["newt*", "deuteron*"]

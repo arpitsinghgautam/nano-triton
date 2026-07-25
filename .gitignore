@@ -11,3 +11,7 @@ venv/
 # local JIT caches (kernels cache under ~/.newt, configs under ~/.deuteron)
 .newt_cache/
 .deuteron_cache.json
+
+# secrets: never commit (this repo is public)
+.env
+.env.*

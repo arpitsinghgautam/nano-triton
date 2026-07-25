@@ -37,5 +37,10 @@ markers = ["cpu: compiler-only tests that run without a GPU"]
 line-length = 100
 
 [tool.ruff.lint]
+# Pin the rule set so lint stays deterministic across ruff releases (0.16
+# widened its defaults to include flake8-bugbear/bandit/etc). This is the
+# classic pyflakes + pycodestyle-error lint: real bugs (undefined names, unused
+# imports, syntax errors), not style opinions.
+select = ["E4", "E7", "E9", "F"]
 # E731: grid lambdas are the Triton launch idiom; codegen builds expr lambdas
 ignore = ["E731"]

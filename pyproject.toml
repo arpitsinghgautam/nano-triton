@@ -37,6 +37,10 @@ markers = ["cpu: compiler-only tests that run without a GPU"]
 
 [tool.ruff]
 line-length = 100
+# Notebooks are demo material, not library source; the demo intentionally puts
+# warnings.filterwarnings() before imports (to keep path-bearing warnings out of
+# committed outputs), which trips E402. Don't lint them.
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 # Pin the rule set so lint stays deterministic across ruff releases (0.16

@@ -78,7 +78,8 @@ python examples/01_vector_add.py</code></pre>
   </a>
   <a class="card" href="https://github.com/arpitsinghgautam/nano-triton/blob/main/benchmarks/results.md">
     <h3>Benchmarks</h3>
-    <p>Full result tables, and bench.py to reproduce them (use --cooldown on laptops).</p>
+    <p>Full result tables from three GPUs (sm_120 and sm_121, x86_64 and aarch64), and
+    bench.py to reproduce them: every published run used --cooldown 300.</p>
   </a>
   <a class="card" href="https://github.com/arpitsinghgautam/nano-triton/commits/main">
     <h3>The build log</h3>
@@ -101,7 +102,7 @@ deuteron/codegen.py        tile-DSL AST -> newt kernel source
 deuteron/runtime.py        tracing, oracle, autotuner, config cache
 tests/                     176 tests, both frameworks, one suite
 examples/                  vector add -> softmax -> layernorm -> matmul -> attention
-benchmarks/bench.py        newt vs triton-windows vs torch</code></pre>
+benchmarks/bench.py        newt vs real triton vs torch, all three GPUs</code></pre>
 </section>
 
 <section id="glossary">

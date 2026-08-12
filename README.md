@@ -3,8 +3,9 @@
 </p>
 
 **A from-scratch nano-Triton and nano-Helion**: the modern GPU-kernel DSL
-stack, rebuilt in ~4,000 lines of readable Python, reaching memory-bandwidth
-parity with real Triton and 80%+ of its tensor-core matmul throughput.
+stack, rebuilt in ~4,000 lines of readable Python. Measured on three GPUs, it
+holds memory-bandwidth parity with real Triton and reaches 70-88% of its
+tensor-core matmul throughput on discrete Blackwell parts.
 
 *Small enough to read in an afternoon, real enough to benchmark.*
 
@@ -46,9 +47,10 @@ repo rebuilds the whole two-layer stack in miniature:
   `mma.sync` PTX over XOR-swizzled shared memory, fed by an N-stage
   `cp.async` pipeline - `num_stages` is a real tuning knob here, like in
   Triton.
-- **Real performance**: memory-bound kernels (softmax, layernorm,
-  elementwise) match Triton exactly; tensor-core matmul sustains 76-83% of
-  triton-windows on the same machine, same source, same config sweep.
+- **Real performance, measured on three GPUs**: memory-bound kernels
+  (softmax, layernorm, elementwise) sit within 2% of Triton on every device,
+  geomean 100.4%; fp16 tensor-core matmul reaches 70-88% of Triton on the two
+  discrete Blackwell cards and 55-69% on GB10. Same source, same config sweep.
 - **Triton-compatible surface**: replace `tl` with `nl` and most kernels
   just run - same `@jit`/grid protocol, `constexpr` specialization, masked
   loads/stores, `@autotune`/`@heuristics`, atomics, grids up to 3D.
@@ -116,49 +118,65 @@ print(matmul.to_newt_source(x, y, out))  # inspect the generated kernel
 
 ## Benchmarks
 
-RTX PRO 5000 Blackwell Laptop GPU (sm_120), torch 2.11, triton-windows.
-Identical kernel source (modulo `nl`/`tl`) and identical config sweeps for
-newt and triton; medians over 50 reps with L2 flushed between reps. Full
-tables in [benchmarks/results.md](benchmarks/results.md); rerun with
-`python benchmarks/bench.py --cooldown 300` (it is a 110 W laptop - suites
-start from a similar thermal state, and within-run columns are the fair
-comparison).
+Three GPUs, chosen to vary the things a single-machine comparison would
+confound: an RTX PRO 5000 Blackwell laptop (sm_120, 110 W, throttles), an RTX
+5090 (sm_120, 170 SMs, no observed throttling), and a GB10 Grace Blackwell
+(sm_121, 48 SMs, unified LPDDR5X, aarch64 host). Identical kernel source
+(modulo `nl`/`tl`) and identical config sweeps for newt and triton; medians
+over 50 reps with L2 flushed between reps. Full tables and threats to validity
+in [benchmarks/results.md](benchmarks/results.md); rerun with
+`python benchmarks/bench.py --cooldown 300`.
 
-**Memory-bound kernels: parity.** Once a kernel is coalesced, vectorized
-and fused, everyone saturates the memory bus; there is nothing left to win.
-
-<p align="center">
-  <img src="docs/assets/bench-membound.svg" alt="softmax: torch 760, newt 765, triton 767 GB/s; layernorm: torch 625, newt 767, triton 764 GB/s; vector add: torch 782, newt 777, triton 779 GB/s" width="880">
-</p>
-
-**Tensor-core matmul.** Compute-bound kernels punish every scheduling
-mistake, which is what makes them the interesting benchmark:
+**Memory-bound kernels: parity, on every device.** Once a kernel is coalesced,
+vectorized and fused, everyone saturates the memory bus and there is nothing
+left to win. Across the 33 bandwidth-bound cells newt is within 2% of Triton
+everywhere, geomean **100.4%**, and it records the highest measured streaming
+bandwidth of the three frameworks on both the laptop and the 5090.
 
 <p align="center">
-  <img src="docs/assets/bench-matmul.svg" alt="matmul fp16 sustained TFLOP/s by size: newt 67-83, triton 81-119, torch 68-103" width="880">
+  <img src="docs/assets/bench-membound.svg" alt="memory-bound bandwidth on three GPUs: newt and triton within two percent of each other on all of them, at roughly 787 GB/s on the laptop, 1568 on the RTX 5090 and 243 on GB10" width="880">
 </p>
 
-**The journey.** Each stage of the compiler is a commit you can read:
+**Tensor-core matmul: where the gap is.** Compute-bound kernels punish every
+scheduling mistake, which is what makes them the interesting benchmark.
 
 <p align="center">
-  <img src="docs/assets/journey.svg" alt="fp16 4096-cubed matmul: WMMA baseline 63.3, cp.async ring 79.5, mma.sync + swizzle 81.7 sustained vs triton 119.0; cold start newt 109.7 vs triton about 120" width="880">
+  <img src="docs/assets/bench-matmul.svg" alt="fp16 matmul, newt as a percentage of triton on three GPUs: laptop 76 to 88 percent, RTX 5090 71 to 79 percent, GB10 55 to 69 percent" width="880">
 </p>
 
-| matmul fp16 (TFLOP/s) | 1024&sup3; | 2048&sup3; | 4096&sup3; | 8192&sup3; |
+| fp16 matmul, newt as % of Triton | 1024&sup3; | 2048&sup3; | 4096&sup3; | 8192&sup3; |
+|---|---|---|---|---|
+| RTX PRO 5000 laptop (110 W) | 87.7 | 76.3 | 75.8 | 78.6 |
+| RTX 5090 (no power limit) | 76.4 | 72.6 | 70.9 | 78.9 |
+| GB10 (48 SMs, unified) | 69.2 | 66.0 | 55.0 | 66.7 |
+
+**The gap is architectural, not thermal.** The obvious explanation for the
+laptop numbers was throttling. Removing the power limit refutes it: going to an
+unconstrained 5090 roughly doubled absolute throughput, 87.6 to **169.2
+TFLOP/s**, and the ratio to Triton did not improve. A cold-start run on the
+5090 reproduces the sustained run within noise (170.2 vs 169.2 at 8192&sup3;),
+so on a card that does not throttle there is no separate cold regime at all.
+tf32 remains the weak path at roughly 40-45% of Triton on all three devices,
+because it still uses WMMA rather than `mma.sync`.
+
+**The journey.** Each stage of the compiler is a commit you can read. This
+ablation was measured on the laptop, so the absolute numbers are laptop
+numbers; the point is which change bought which step:
+
+<p align="center">
+  <img src="docs/assets/journey.svg" alt="fp16 4096-cubed matmul on the laptop: WMMA baseline 63.3, cp.async ring 79.5, mma.sync plus swizzle 81.7, against triton 119.0" width="880">
+</p>
+
+| matmul fp16 on the laptop (TFLOP/s) | 1024&sup3; | 2048&sup3; | 4096&sup3; | 8192&sup3; |
 |---|---|---|---|---|
 | newt v0.1 (WMMA, sync staging) | 39.1 | 69.1 | 63.3 | 62.8 |
 | + cross-iteration cp.async ring | 63.7 | 70.6 | 79.5 | 70.1 |
 | + mma.sync/ldmatrix/swizzle + N stages | **67.2** | **82.7** | **81.7** | **77.0** |
 | triton-windows (same run) | 81.2 | 101.1 | 119.0 | 100.8 |
-| torch (cuBLAS, same run) | 67.8 | 103.1 | 100.3 | 95.0 |
 
-That is **76-83% of Triton sustained** on a thermally limited laptop;
-cold-start single-kernel runs reach **109.7 TFLOP/s** (~92% of Triton's own
-cold numbers), up from 45-70% for the naive implementation. tf32 matmul
-sits at ~45% (it still uses the WMMA path). The remaining fp16 gap is
-Triton's finest-grained scheduling - per-iteration address strength
-reduction and warp specialization - and the journey chart above shows
-exactly which commit bought which step.
+The remaining fp16 gap is Triton's finest-grained scheduling, per-iteration
+address strength reduction and warp specialization, plus tile quantization on
+small-SM parts like GB10 where split-K and a CTA swizzle would help.
 
 ## How a newt kernel runs
 

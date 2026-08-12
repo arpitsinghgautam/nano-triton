@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Benchmarks | newt + deuteron</title>
-<meta name="description" content="newt vs real Triton vs torch/cuBLAS on the same machine: memory-bound parity, 76-83% of Triton sustained on fp16 matmul, 110 TFLOP/s cold. Methodology and caveats included.">
+<meta name="description" content="newt vs real Triton vs torch/cuBLAS on three GPUs: memory-bound parity everywhere, 55-88% of Triton on fp16 matmul depending on the device, 169.2 TFLOP/s peak on an RTX 5090. Methodology and caveats included.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Benchmarks | newt + deuteron">
-<meta property="og:description" content="newt vs real Triton vs torch/cuBLAS on the same machine: memory-bound parity, 76-83% of Triton sustained on fp16 matmul, 110 TFLOP/s cold.">
+<meta property="og:description" content="newt vs real Triton vs torch/cuBLAS on three GPUs: memory-bound parity everywhere, 55-88% of Triton on fp16 matmul depending on the device, 169.2 TFLOP/s peak on an RTX 5090.">
 <meta property="og:url" content="https://arpitsinghgautam.me/nano-triton/benchmarks.html">
 <meta property="og:image" content="https://arpitsinghgautam.me/nano-triton/assets/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -39,42 +39,129 @@
 <header class="page">
   <div class="kicker">the numbers</div>
   <h1>Benchmarks, and how to read them</h1>
-  <p class="sub">Measured against triton-windows (real Triton) and torch (which calls
-  NVIDIA's hand-tuned cuBLAS/cuDNN libraries) on the same machine: an RTX PRO 5000
-  Blackwell laptop GPU.</p>
+  <p class="sub">Measured against real Triton (triton-windows on Windows, triton 3.6.0 on Linux)
+  and torch (which calls NVIDIA's hand-tuned cuBLAS/cuDNN libraries) on three GPUs: an RTX PRO
+  5000 Blackwell laptop, an RTX 5090 desktop, and a GB10 Grace Blackwell (DGX Spark).</p>
 </header>
 
+<section id="summary">
+<div class="callout">
+<strong>Summary.</strong> Memory-bound kernels are at parity with Triton on all three GPUs:
+geomean 100.4% over the 33 bandwidth-bound cells, always within 2%. fp16 tensor-core matmul
+reaches 70-88% of Triton on the two discrete Blackwell GPUs (geomean 77%) and 55-69% on GB10,
+with a peak of <strong>169.2 TFLOP/s on the RTX 5090</strong>. tf32 is the weak path at roughly
+40-45% of Triton everywhere. The matmul gap turns out to be architectural, not thermal, which
+is the one thing a single-machine comparison could never have shown.
+</div>
+</section>
+
 <section id="method">
+<h2><span class="kicker">how it was measured</span>Three devices, one method</h2>
+<p>The three GPUs were chosen to vary the axes a single-machine comparison confounds: compute
+capability, host architecture, and memory system.</p>
+
+<table>
+  <tr><th></th><th>RTX PRO 5000 Blackwell Laptop</th><th>RTX 5090</th><th>GB10 (DGX Spark)</th></tr>
+  <tr><td>compute capability</td><td>sm_120</td><td>sm_120</td><td>sm_121</td></tr>
+  <tr><td>SMs</td><td>-</td><td>170</td><td>48</td></tr>
+  <tr><td>memory</td><td>24 GB GDDR7</td><td>31.3 GB GDDR7</td><td>121.6 GB LPDDR5X, unified</td></tr>
+  <tr><td>power</td><td>~110 W, throttles</td><td>desktop, no observed throttling</td><td>unified SoC</td></tr>
+  <tr><td>host</td><td>Windows 11, x86_64</td><td>Ubuntu 24.04, x86_64</td><td>Ubuntu 24.04, aarch64</td></tr>
+  <tr><td>peak measured bandwidth</td><td class="num">787 GB/s</td><td class="num">1568 GB/s</td><td class="num">243 GB/s</td></tr>
+</table>
+
 <p>Identical kernel source (modulo <code>nl</code>/<code>tl</code>) and identical config sweeps;
-medians over 50 reps with the L2 cache flushed between reps. The machine is a 110 W laptop
-that thermally throttles under sustained load, so suites start from a similar thermal
-state and within-run columns are the fair comparison. Rerun everything with
-<code>python benchmarks/bench.py --cooldown 300</code>; the raw tables live in
+medians over 50 reps with the L2 cache flushed between reps; <code>python benchmarks/bench.py
+--cooldown 300</code> run the same way on all three machines. The laptop is a 110 W part that
+thermally throttles under sustained load, so its suites start from a similar thermal state and
+within-run columns are the fair comparison. NVML was broken on the RTX 5090 host by a driver
+userspace and kernel-module mismatch, so there is no thermal telemetry for it; the evidence that
+it did not throttle is that a cold run reproduces the sustained run within noise. The raw tables,
+including the excluded torch anomalies, live in
 <a href="https://github.com/arpitsinghgautam/nano-triton/blob/main/benchmarks/results.md">benchmarks/results.md</a>.</p>
 </section>
 
 <section id="membound">
-<h2><span class="kicker">the bandwidth roof</span>Memory-bound kernels: parity</h2>
+<h2><span class="kicker">the bandwidth roof</span>Memory-bound kernels: parity on all three GPUs</h2>
 <figure class="figure">
-  <img src="assets/bench-membound.svg" alt="softmax, layernorm and vector add bandwidth: newt, triton and torch within a few percent of each other">
+  <img src="assets/bench-membound.svg" alt="softmax, layernorm and vector add bandwidth on three GPUs: newt, triton and torch within a couple of percent of each other on each device, topping out at 787 GB/s on the RTX PRO 5000 laptop, 1568 GB/s on the RTX 5090 and 243 GB/s on GB10">
   <figcaption>There is nothing left to win: softmax reads and writes each byte once, and
   coalesced + vectorized + fused saturates the bus. Any correct compiler ties. This is the
   roofline model's bandwidth roof.</figcaption>
 </figure>
+
+<p>Across the 33 bandwidth-bound cells on the three devices, newt is within 2% of Triton
+everywhere, geomean 100.4%, and marginally ahead on average. It also records the highest
+measured streaming bandwidth of the three frameworks on both the laptop and the 5090: peak
+bandwidth is 787 GB/s on the RTX PRO 5000 laptop, 1568 GB/s on the RTX 5090, and 243 GB/s on
+GB10's unified LPDDR5X. That parity now holds across two memory architectures, not just one
+board.</p>
+
+<p>One caveat worth stating explicitly: the 1M-element vector add is launch-latency-bound rather
+than bandwidth-bound, and newt sits at 89-92% of Triton there. That is dispatch overhead, not
+memory traffic, and it is why the claim is parity on bandwidth-bound sizes rather than parity on
+every point.</p>
 </section>
 
 <section id="matmul">
 <h2><span class="kicker">the compute roof</span>Tensor-core matmul</h2>
 <figure class="figure">
-  <img src="assets/bench-matmul.svg" alt="fp16 matmul sustained TFLOP/s across sizes: newt 67 to 83, triton 81 to 119, torch 68 to 103">
+  <img src="assets/bench-matmul.svg" alt="fp16 matmul throughput across sizes on three GPUs: on the RTX 5090 newt reaches 169.2 TFLOP/s against triton 214.5 and torch 216.9, on the RTX PRO 5000 laptop newt reaches 87.6 against triton 115.5, and on GB10 newt reaches 45.2 against triton 68.5 with torch collapsing to about 12">
 </figure>
 
+<p>Peak newt fp16 throughput is <strong>169.2 TFLOP/s on the RTX 5090</strong> at 8192&sup3;,
+against 214.5 for Triton and 216.9 for torch/cuBLAS in the same run. On the RTX PRO 5000 laptop
+the peak is 87.6 TFLOP/s at 4096&sup3;, and on GB10 it is 45.2 TFLOP/s at 2048&sup3;. As a ratio
+to Triton, per device and size:</p>
+
+<table>
+  <tr><th>fp16 matmul, newt as % of Triton</th><th>1024&sup3;</th><th>2048&sup3;</th><th>4096&sup3;</th><th>8192&sup3;</th></tr>
+  <tr><td>RTX PRO 5000 laptop (110 W)</td><td class="num">87.7</td><td class="num">76.3</td><td class="num">75.8</td><td class="num">78.6</td></tr>
+  <tr><td>RTX 5090 (no power limit)</td><td class="num">76.4</td><td class="num">72.6</td><td class="num">70.9</td><td class="num">78.9</td></tr>
+  <tr><td>GB10 (48 SMs, unified memory)</td><td class="num">69.2</td><td class="num">66.0</td><td class="num">55.0</td><td class="num">66.7</td></tr>
+</table>
+
+<p>That is <strong>70-88% of Triton on the discrete Blackwell GPUs</strong> (geomean 77%) and
+<strong>55-69% on GB10</strong>; across all three devices and four sizes the geomean is 72%.
+Torch/cuBLAS ran in the same suites as the hand-tuned vendor reference and is the fastest of the
+three at 8192&sup3; on the RTX 5090, at 216.9 TFLOP/s. On GB10 its fp16 column is excluded from
+comparison for the reason given under Portability below.</p>
+</section>
+
+<section id="architectural">
+<h2><span class="kicker">what three devices showed</span>The gap is architectural, not thermal</h2>
+<p>The obvious hypothesis for the laptop ratios was throttling: a 110 W part clocks down under
+sustained load, and if newt's schedule were more sensitive to that than Triton's, the ratio would
+understate newt. Removing the power limit refutes it. Going from the laptop to an unconstrained
+RTX 5090 roughly doubled absolute throughput, from 87.6 to 169.2 TFLOP/s at the peak, and the
+ratio to Triton did not improve. It slightly worsened.</p>
+
+<p>A cold-start run on the 5090, after 600 s of idle, reproduces the sustained run within noise:
+170.2 against 169.2 TFLOP/s at 8192&sup3;. On a card that does not throttle there is no separate
+cold regime at all. An earlier laptop-only measurement reported newt at roughly 92% of Triton on
+a cold start; that figure was an artifact of how the two compilers' baselines decay on a
+thermally limited part, it does not reproduce anywhere else, and it is withdrawn.</p>
+
+<p>What is left is a real scheduling gap with two distinct causes. On large GPUs it is Triton's
+finest-grained machinery: strength-reducing address computations across loop iterations and
+specializing warps into producer/consumer roles. On a small-SM part such as GB10 a second cause
+dominates, tile and wave quantization plus the absence of split-K and CTA swizzle; newt's GB10
+throughput actually falls as the problem grows, from 45.2 TFLOP/s at 2048&sup3; to 28.4 at
+4096&sup3; and 23.6 at 8192&sup3;, which is what tile quantization on 48 SMs looks like. All of
+these are known and documented, and none of them is heat.</p>
+</section>
+
+<section id="ablation">
+<h2><span class="kicker">laptop-only ablation</span>How the matmul path got there</h2>
 <figure class="figure">
-  <img src="assets/journey.svg" alt="the journey at 4096 cubed: 63.3 to 79.5 to 81.7 sustained, 109.7 cold vs triton about 120">
+  <img src="assets/journey.svg" alt="laptop-only optimization ablation at 4096 cubed: newt 63.3 then 79.5 then 81.7 TFLOP/s sustained as cp.async staging and then mma.sync were added, with a 109.7 cold-start point and the triton-windows bar from the same run">
+  <figcaption>A single-device ablation on the RTX PRO 5000 laptop, kept because it shows what
+  each optimization bought. It is not a cross-device result: the cold-start point in particular
+  is a laptop throttling effect that does not reproduce on the 5090.</figcaption>
 </figure>
 
 <table>
-  <tr><th>matmul fp16 (TFLOP/s)</th><th>1024&sup3;</th><th>2048&sup3;</th><th>4096&sup3;</th><th>8192&sup3;</th></tr>
+  <tr><th>matmul fp16, RTX PRO 5000 laptop (TFLOP/s)</th><th>1024&sup3;</th><th>2048&sup3;</th><th>4096&sup3;</th><th>8192&sup3;</th></tr>
   <tr><td>newt v0.1 (WMMA, sync staging)</td><td class="num">39.1</td><td class="num">69.1</td><td class="num">63.3</td><td class="num">62.8</td></tr>
   <tr><td>+ cross-iteration cp.async ring</td><td class="num">63.7</td><td class="num">70.6</td><td class="num">79.5</td><td class="num">70.1</td></tr>
   <tr><td>+ mma.sync / ldmatrix / swizzle + N stages</td><td class="num"><strong>67.2</strong></td><td class="num"><strong>82.7</strong></td><td class="num"><strong>81.7</strong></td><td class="num"><strong>77.0</strong></td></tr>
@@ -82,21 +169,45 @@ state and within-run columns are the fair comparison. Rerun everything with
   <tr><td>torch / cuBLAS (same run)</td><td class="num">67.8</td><td class="num">103.1</td><td class="num">100.3</td><td class="num">95.0</td></tr>
 </table>
 
-<p>That is <strong>76-83% of Triton sustained</strong>; cold-start single-kernel runs reach
-<strong>109.7 TFLOP/s, ~92% of Triton's own cold numbers</strong>. The remaining gap is
-Triton's finest-grained machinery: strength-reducing address computations across loop
-iterations and specializing warps into producer/consumer roles. Both are known,
-documented, and out of scope for a nano on purpose. tf32 (a 19-bit float format used for
-fp32 matmuls on tensor cores) still uses NVIDIA's higher-level WMMA API and sits near 45%:
-mechanical future work.</p>
+<p>These are laptop numbers from the ablation session, not from the three-device sweep above; a
+later laptop run of the same final kernel reports 66.5, 83.7, 87.6 and 81.3 TFLOP/s against
+Triton's 75.8, 109.7, 115.5 and 103.4, which is the spread you get on a part that throttles. Use
+the ratio table for the cross-device claim and this table only for the shape of the progression.</p>
+</section>
+
+<section id="tf32">
+<h2><span class="kicker">the weak path</span>tf32 matmul</h2>
+<p>tf32 (a 19-bit float format used for fp32 matmuls on tensor cores) still goes through NVIDIA's
+higher-level WMMA API instead of the <code>mma.sync</code> path fp16 uses, and it sits at roughly
+40-45% of Triton on all three devices (full range 34.7 to 54.2%, geomean 42.9%). The signature is
+clearest on the laptop, where newt's tf32 throughput is flat at 21.4 to 23.9 TFLOP/s across a
+512x range in problem size while Triton scales from 44.1 to 57.6 TFLOP/s. Flat under scaling is a
+code generation path, not a tuning problem. Porting tf32 to <code>mma.sync</code> is mechanical
+work on machinery that already exists for fp16.</p>
+</section>
+
+<section id="portability">
+<h2><span class="kicker">a compiler older than the chip</span>Portability</h2>
+<p>newt compiled and ran correctly on GB10 (sm_121), a compute capability that postdates the
+compiler, with no source changes. Tests pass 176/176 on the laptop and on the 5090, and 175/176
+on GB10, where the single failure is on the reference side rather than in newt:
+<code>torch.exp2</code> is jiterator-backed and compiles at runtime through torch's bundled NVRTC
+12.8, which predates sm_121, while newt resolves the bare <code>libnvrtc.so</code> soname and so
+picks up the system CUDA 13.0.</p>
+
+<p>The same vintage problem shows up in the numbers. Torch's cuBLAS fp16 matmul on GB10 runs at
+9.6 to 12.5 TFLOP/s, 2 to 6x below both newt and Triton at every size, so that column is excluded
+from any newt-versus-torch comparison. Two independent code generators agreeing rules out a newt
+artifact.</p>
 </section>
 
 <section id="leftout">
 <h2><span class="kicker">scope</span>What was deliberately left out</h2>
 <p>Random number generation inside kernels, device-side printing, calling one
 <code>@jit</code> function from another, non-NVIDIA backends, fp8 formats, Helion's larger
-search space (loop reordering, persistent kernels), and the last few percent of matmul
-scheduling described above. Each omission is documented where a user would hit it. None of
+search space (loop reordering, persistent kernels), and the matmul scheduling work described
+above: the tf32 <code>mma.sync</code> port, split-K, CTA swizzle, address strength reduction in
+the k-loop, and warp specialization. Each omission is documented where a user would hit it. None of
 them changes the ideas this project exists to demonstrate: the modern GPU kernel stack,
 from tile-level Python down to tensor-core machine code, fits in four thousand readable
 lines once you know which problems are essential and which are incidental.</p>

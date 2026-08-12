@@ -7,14 +7,14 @@
 <meta name="description" content="A from-scratch nano-Triton and nano-Helion: the modern GPU kernel DSL stack rebuilt in ~4,000 lines of readable Python, with real tensor-core performance.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="newt + deuteron: the GPU kernel stack, rebuilt small">
-<meta property="og:description" content="A from-scratch nano-Triton and nano-Helion: ~4,000 lines of Python reaching memory-bandwidth parity with Triton and ~92% of its cold matmul throughput on real tensor cores.">
+<meta property="og:description" content="A from-scratch nano-Triton and nano-Helion: ~4,000 lines of Python at memory-bandwidth parity with Triton on three GPUs, and 55-88% of its tensor-core matmul throughput, peaking at 169 TFLOP/s on an RTX 5090.">
 <meta property="og:url" content="https://arpitsinghgautam.me/nano-triton/">
 <meta property="og:image" content="https://arpitsinghgautam.me/nano-triton/assets/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="newt + deuteron: the GPU kernel stack, rebuilt small">
-<meta name="twitter:description" content="A from-scratch nano-Triton and nano-Helion: ~4,000 lines of Python reaching memory-bandwidth parity with Triton and ~92% of its cold matmul throughput on real tensor cores.">
+<meta name="twitter:description" content="A from-scratch nano-Triton and nano-Helion: ~4,000 lines of Python at memory-bandwidth parity with Triton on three GPUs, and 55-88% of its tensor-core matmul throughput, peaking at 169 TFLOP/s on an RTX 5090.">
 <meta name="twitter:image" content="https://arpitsinghgautam.me/nano-triton/assets/og-card.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='monospace' font-size='19' font-weight='bold' fill='%232dd4bf'%3En%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
@@ -50,8 +50,8 @@
   <div class="pillrow">
     <span class="pill">176 tests</span>
     <span class="pill">no deps beyond torch</span>
-    <span class="pill">memory-bound: parity with Triton</span>
-    <span class="pill">fp16 matmul: 110 TFLOP/s</span>
+    <span class="pill">memory-bound: parity with Triton on 3 GPUs</span>
+    <span class="pill">fp16 matmul: 169 TFLOP/s (RTX 5090)</span>
     <span class="pill">MIT</span>
   </div>
   <div class="btnrow">
@@ -126,7 +126,9 @@ groups, round-robin.</p>
 <p>Triton proves contiguity with static compiler analysis. newt instead emits a tiny
 runtime check per group ("are these offsets consecutive, aligned, all unmasked?") and
 branches to a single 128-bit vector instruction: a few integer compares against a
-~500-cycle memory access. That one trick took vector-add from 82% of Triton to parity.</p>
+~500-cycle memory access. That one trick took vector-add from 82% of Triton to parity at
+16M elements and above (roughly 90% at 1M, where the launch is too short to reach the
+bandwidth roof).</p>
 
 <h3>Reductions and broadcasting</h3>
 <p><code>nl.sum(x)</code> combines values held by different threads in three stages: each
@@ -175,8 +177,8 @@ this iteration's background copy. Same overlap, no loop rewriting.</p>
 <p><strong>Plus a final twist:</strong> within one k-step, the fragment loads and the mma math
 also form a dependency chain. newt double-buffers the fragments so step k+1's
 <code>ldmatrix</code> issues before step k's math, hiding shared-memory latency behind the
-tensor cores. That last change took the cold-start matmul from 96 to 110 TFLOP/s
-(trillion floating-point operations per second).</p>
+tensor cores. On the RTX PRO 5000 laptop, that last change took the cold-start matmul from
+96 to 110 TFLOP/s (trillion floating-point operations per second).</p>
 
 <h3>The JIT layer</h3>
 <p><code>@newt.jit</code> parses the function once. On every call it classifies the arguments
@@ -242,15 +244,30 @@ of two) with no explicit mask handling anywhere in user code.
 <section id="results">
 <h2><span class="kicker">the numbers</span>Results at a glance</h2>
 
-<p>Measured against real Triton (triton-windows) and torch/cuBLAS on the same machine,
-same kernel source, same tuning sweep: memory-bound kernels (softmax, layernorm,
-elementwise) tie Triton outright, and fp16 tensor-core matmul holds 76-83% of Triton
-sustained, reaching 110 TFLOP/s (~92% of Triton's own cold numbers) on cold single
-runs.</p>
+<p>Measured against real Triton (triton-windows on Windows, triton 3.6.0 on Linux) and
+torch/cuBLAS on three GPUs, with the same kernel source and the same tuning sweep
+everywhere: an RTX PRO 5000 Blackwell laptop (sm_120, 110 W, throttles), an RTX 5090
+(sm_120, 170 SMs), and a GB10 Grace Blackwell (sm_121, 48 SMs, unified memory).
+Memory-bound kernels are at parity on all three, within 2% of Triton on bandwidth-bound
+sizes (geomean 100.4% across 33 cells), and newt records the highest measured streaming
+bandwidth of the three frameworks on both the laptop and the 5090. fp16 tensor-core matmul
+holds 70-88% of Triton on the two discrete Blackwell GPUs (geomean 77%) and 55-69% on
+GB10, peaking at 169.2 TFLOP/s on the RTX 5090. tf32 is the weak path at roughly 40-45% of
+Triton on every device, because it still uses the WMMA path rather than the
+<code>mma.sync</code> path used for fp16.</p>
+
+<p>The remaining fp16 gap is architectural, not thermal. The obvious explanation was laptop
+throttling, and removing the power limit refutes it: the unconstrained RTX 5090 roughly
+doubled absolute throughput over the 110 W laptop (87.6 to 169.2 TFLOP/s) and the ratio to
+Triton did not improve. On that card a cold-start run reproduces the sustained run within
+noise (170.2 vs 169.2 TFLOP/s at 8192 cubed), so there is no separate cold regime once the
+part is not throttling. newt also compiled and ran correctly on GB10, a compute capability
+that postdates the compiler, with no source changes.</p>
 
 <figure class="figure">
-  <img src="assets/journey.svg" alt="the fp16 matmul journey at 4096 cubed: 63.3 to 79.5 to 81.7 sustained, 109.7 cold vs triton about 120">
-  <figcaption>Each stage of the compiler is one readable commit.</figcaption>
+  <img src="assets/journey.svg" alt="the fp16 matmul journey at 4096 cubed on the RTX PRO 5000 laptop: 63.3 to 79.5 to 81.7 sustained, 109.7 cold vs triton about 120">
+  <figcaption>Each stage of the compiler is one readable commit. Figures are from the
+  RTX PRO 5000 laptop run; the per-device tables are on the benchmarks page.</figcaption>
 </figure>
 
 <div class="pagenav">

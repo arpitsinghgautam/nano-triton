@@ -1,9 +1,10 @@
 # nano-triton
 
 **A from-scratch nano-Triton (`newt`) and nano-Helion (`deuteron`):** the modern
-GPU-kernel DSL stack, rebuilt in ~4,000 lines of readable Python, reaching
-memory-bandwidth parity with real Triton and 80%+ of its tensor-core matmul
-throughput. No dependencies beyond torch.
+GPU-kernel DSL stack, rebuilt in ~4,000 lines of readable Python. Measured on
+three GPUs, it holds memory-bandwidth parity with real Triton and reaches 70-88%
+of its tensor-core matmul throughput on discrete Blackwell parts. No
+dependencies beyond torch.
 
 ![nano-triton](https://arpitsinghgautam.me/nano-triton/assets/og-card.png)
 
@@ -48,17 +49,20 @@ add_kernel[lambda m: (newt.cdiv(1_000_000, m["BLOCK"]),)](
 
 ## Benchmarks
 
-RTX PRO 5000 Blackwell laptop GPU, same kernel source and tuning sweep for newt
-and real Triton. fp16 tensor-core matmul, sustained same-run medians:
+Three GPUs (RTX PRO 5000 Blackwell laptop, RTX 5090, GB10 Grace Blackwell),
+same kernel source and tuning sweep for newt and real Triton. fp16 tensor-core
+matmul, newt as a percentage of Triton:
 
-| TFLOP/s | 1024 | 2048 | 4096 | 8192 |
+| newt as % of Triton | 1024 | 2048 | 4096 | 8192 |
 |---|---|---|---|---|
-| nano-triton | 67 | 83 | 82 | 77 |
-| triton | 81 | 101 | 119 | 101 |
+| RTX PRO 5000 laptop | 88 | 76 | 76 | 79 |
+| RTX 5090 | 76 | 73 | 71 | 79 |
+| GB10 | 69 | 66 | 55 | 67 |
 
-That is 76 to 83 percent of Triton sustained, and about 92 percent cold.
-Memory-bound kernels (softmax, layernorm, elementwise) match Triton at the
-memory-bandwidth ceiling.
+Peak measured throughput is 169 TFLOP/s on the RTX 5090. Memory-bound kernels
+(softmax, layernorm, elementwise) sit within 2% of Triton on all three devices,
+geomean 100.4%. tf32 matmul is the weak path at roughly 40-45%, since it still
+uses WMMA rather than `mma.sync`.
 
 ## Docs and source
 

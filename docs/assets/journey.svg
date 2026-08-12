@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 330" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-  <rect x="0.5" y="0.5" width="879" height="329" rx="14" fill="#0d1117" stroke="#30363d"/>
-  <text x="36" y="30" font-size="15" font-weight="700" fill="#e6edf3">the fp16 matmul journey at 4096&#179;</text>
-  <text x="36" y="50" font-size="11.5" fill="#6e7681">each compiler stage is one readable commit; sustained same-run medians first, cold start below</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 262" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <rect x="0.5" y="0.5" width="879" height="261" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="36" y="30" font-size="15" font-weight="700" fill="#e6edf3">the fp16 matmul journey at 4096&#179;, RTX PRO 5000 laptop</text>
+  <text x="36" y="50" font-size="11.5" fill="#6e7681">each compiler stage is one readable commit; sustained same-run medians, single device</text>
 
   <g font-size="12">
     <text x="298" y="84" text-anchor="end" fill="#8b949e">v0.1: WMMA + synchronous staging</text>
@@ -21,18 +21,6 @@
     <text x="816" y="174" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">119.0</text>
   </g>
 
-  <path d="M36 200 H844" stroke="#30363d" stroke-width="1.2" stroke-dasharray="5 5"/>
-  <text x="36" y="220" font-size="11.5" fill="#6e7681">cold start, single kernel, no thermal throttle (+ fragment double-buffering across k-steps):</text>
-
-  <g font-size="12">
-    <text x="298" y="248" text-anchor="end" font-weight="700" fill="#e6edf3">newt, best config</text>
-    <rect x="308" y="234" width="460.7" height="20" rx="3" fill="#2dd4bf"/>
-    <text x="777" y="248" font-size="11" font-family="ui-monospace,Consolas,monospace" font-weight="700" fill="#e6edf3">109.7</text>
-
-    <text x="298" y="278" text-anchor="end" fill="#8b949e">triton, best config</text>
-    <rect x="308" y="264" width="504" height="20" rx="3" fill="#818cf8"/>
-    <text x="820" y="278" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">~120</text>
-  </g>
-
-  <text x="440" y="312" text-anchor="middle" font-size="11.5" fill="#6e7681">~92% of triton cold; the remaining gap is per-iteration address strength reduction and warp specialization</text>
+  <text x="440" y="212" text-anchor="middle" font-size="11.5" fill="#6e7681">TFLOP/s on one device, so read this as which change bought which step, not as a cross-device claim.</text>
+  <text x="440" y="234" text-anchor="middle" font-size="11.5" fill="#6e7681">For ratios measured across three GPUs, see the matmul chart.</text>
 </svg>

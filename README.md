@@ -130,8 +130,7 @@ in [benchmarks/results.md](benchmarks/results.md); rerun with
 **Memory-bound kernels: parity, on every device.** Once a kernel is coalesced,
 vectorized and fused, everyone saturates the memory bus and there is nothing
 left to win. Across the 33 bandwidth-bound cells newt is within 2% of Triton
-everywhere, geomean **100.4%**, and it records the highest measured streaming
-bandwidth of the three frameworks on both the laptop and the 5090.
+everywhere, geomean **100.4%**, and ahead of Triton on all three devices.
 
 <p align="center">
   <img src="docs/assets/bench-membound.svg" alt="memory-bound bandwidth on three GPUs: newt and triton within two percent of each other on all of them, at roughly 787 GB/s on the laptop, 1568 on the RTX 5090 and 243 on GB10" width="880">

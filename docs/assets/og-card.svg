@@ -39,6 +39,6 @@
     <path d="M722 389 h14 m-7 -7 l7 7 l-7 7"/>
   </g>
 
-  <text x="600" y="486" text-anchor="middle" font-size="25" fill="#8b949e">fp16 matmul 110 TFLOP/s&#160;&#160;|&#160;&#160;memory-bound parity with Triton&#160;&#160;|&#160;&#160;176 tests&#160;&#160;|&#160;&#160;MIT</text>
+  <text x="600" y="486" text-anchor="middle" font-size="24" fill="#8b949e">Triton parity on memory-bound kernels, measured on 3 GPUs&#160;&#160;|&#160;&#160;176 tests&#160;&#160;|&#160;&#160;MIT</text>
   <text x="600" y="560" text-anchor="middle" font-size="24" font-family="ui-monospace,'Cascadia Code',Consolas,monospace" fill="#2dd4bf">arpitsinghgautam.me/nano-triton</text>
 </svg>

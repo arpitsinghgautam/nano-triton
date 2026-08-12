@@ -41,5 +41,5 @@
     <path d="M479 159 h8 m-4 -4 l4 4 l-4 4"/>
     <path d="M557 159 h8 m-4 -4 l4 4 l-4 4"/>
   </g>
-  <text x="440" y="205" text-anchor="middle" font-size="13" fill="#6e7681">~4k lines&#160;&#160;|&#160;&#160;176 tests&#160;&#160;|&#160;&#160;no deps beyond torch&#160;&#160;|&#160;&#160;fp16 matmul 110 TFLOP/s&#160;&#160;|&#160;&#160;MIT</text>
+  <text x="440" y="205" text-anchor="middle" font-size="13" fill="#6e7681">~4k lines&#160;&#160;|&#160;&#160;176 tests&#160;&#160;|&#160;&#160;no deps beyond torch&#160;&#160;|&#160;&#160;Triton parity on memory-bound kernels, 3 GPUs&#160;&#160;|&#160;&#160;MIT</text>
 </svg>

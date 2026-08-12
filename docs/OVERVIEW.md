@@ -23,7 +23,7 @@ smart cores it has thousands of simple ones, grouped into a few dozen
 SMs (streaming multiprocessors, the GPU's version of a core cluster). It
 wins whenever you need to do the *same simple thing to millions of numbers
 at once*: shading pixels, and, it turns out, multiplying the matrices
-inside neural networks. The machine this project was built on has roughly
+inside neural networks. The laptop this project was built on has roughly
 75 times more raw arithmetic throughput in its GPU than in its CPU.
 
 The catch: to get that throughput you must phrase your problem as
@@ -439,8 +439,10 @@ hardware and software versions, and the known threats to validity are in
 
 Across the 33 measurement points that are genuinely bandwidth-bound, newt
 is within 2% of Triton everywhere, with a geometric mean of 100.4% and a
-marginal average lead; on both the laptop and the RTX 5090 the highest
-streaming bandwidth recorded by any of the three frameworks was newt's.
+marginal average lead over Triton on all three devices. On the laptop the
+highest streaming bandwidth recorded by any of the three frameworks was
+newt's; on the RTX 5090 and GB10 torch takes the single highest reading,
+where it appears to use a different kernel for short rows.
 torch is level with both when it is running a fused kernel of its own and
 well behind when it is not: the same layernorm costs torch 626 GB/s on the
 laptop, 1097 GB/s on the RTX 5090 and 174 GB/s on GB10, against newt's
@@ -462,7 +464,8 @@ The claim needs one qualifier, and it is about launch size rather than
 bandwidth. The smallest point in the suite, a 1M-element vector add,
 finishes so quickly that the fixed cost of starting a kernel is a visible
 share of the total, so that point measures launch overhead and not the
-memory system; newt sits at 89-92% of Triton there. From 16M elements up,
+memory system; newt sits at 88.6% of Triton there on the laptop and 91.6%
+on the RTX 5090, and at parity on GB10. From 16M elements up,
 where the launch is long enough to reach the roof, it is at parity. "Within
 2% on bandwidth-bound sizes" is the accurate way to say it.
 

@@ -25,7 +25,9 @@ reference side, see Portability below).
 - **Memory-bound kernels are at parity with Triton on every device**: geomean
   100.4% over the 33 bandwidth-bound cells, always within 2%, and marginally
   ahead on average. newt records the highest measured streaming bandwidth of the
-  three frameworks on both the laptop and the 5090.
+  three frameworks on the laptop; on the 5090 and GB10 it leads Triton but torch
+  takes the single highest reading (1638 GB/s on the 5090 at softmax 4096x1024,
+  where torch appears to use a different small-row kernel, and 244 GB/s on GB10).
 - **fp16 tensor-core matmul reaches 70-88% of Triton on the discrete Blackwell
   GPUs** (geomean 77%) and 55-69% on GB10. Across all three devices and four
   sizes the geomean is 72%.

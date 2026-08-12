@@ -91,16 +91,18 @@ including the excluded torch anomalies, live in
 </figure>
 
 <p>Across the 33 bandwidth-bound cells on the three devices, newt is within 2% of Triton
-everywhere, geomean 100.4%, and marginally ahead on average. It also records the highest
-measured streaming bandwidth of the three frameworks on both the laptop and the 5090: peak
+everywhere, geomean 100.4%, and marginally ahead on average. newt's own peak streaming
 bandwidth is 787 GB/s on the RTX PRO 5000 laptop, 1568 GB/s on the RTX 5090, and 243 GB/s on
-GB10's unified LPDDR5X. That parity now holds across two memory architectures, not just one
+GB10's unified LPDDR5X. It leads Triton on all three, and is the fastest of the three
+frameworks on the laptop; on the 5090 and GB10 torch takes the single highest reading, 1638
+GB/s at softmax 4096x1024 and 244 GB/s respectively, where it appears to use a different
+kernel for short rows. That parity now holds across two memory architectures, not just one
 board.</p>
 
 <p>One caveat worth stating explicitly: the 1M-element vector add is launch-latency-bound rather
-than bandwidth-bound, and newt sits at 89-92% of Triton there. That is dispatch overhead, not
-memory traffic, and it is why the claim is parity on bandwidth-bound sizes rather than parity on
-every point.</p>
+than bandwidth-bound, and newt sits at 88.6% of Triton on the laptop and 91.6% on the 5090
+there, though it is at parity on GB10. That is dispatch overhead, not memory traffic, and it is
+why the claim is parity on bandwidth-bound sizes rather than parity on every point.</p>
 </section>
 
 <section id="matmul">
@@ -154,7 +156,7 @@ these are known and documented, and none of them is heat.</p>
 <section id="ablation">
 <h2><span class="kicker">laptop-only ablation</span>How the matmul path got there</h2>
 <figure class="figure">
-  <img src="assets/journey.svg" alt="laptop-only optimization ablation at 4096 cubed: newt 63.3 then 79.5 then 81.7 TFLOP/s sustained as cp.async staging and then mma.sync were added, with a 109.7 cold-start point and the triton-windows bar from the same run">
+  <img src="assets/journey.svg" alt="laptop-only optimization ablation at 4096 cubed: newt 63.3 then 79.5 then 81.7 TFLOP/s sustained as cp.async staging and then mma.sync were added, against the triton-windows bar at 119.0 from the same run">
   <figcaption>A single-device ablation on the RTX PRO 5000 laptop, kept because it shows what
   each optimization bought. It is not a cross-device result: the cold-start point in particular
   is a laptop throttling effect that does not reproduce on the 5090.</figcaption>

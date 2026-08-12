@@ -325,8 +325,10 @@ def main():
     ap.add_argument("--kernel", default=None,
                     choices=[None, "add", "softmax", "layernorm", "matmul", "matmul_tf32"])
     ap.add_argument("--cooldown", type=int, default=0,
-                    help="seconds to idle between suites (laptops throttle; "
-                         "each suite should start from a similar thermal state)")
+                    help="seconds to idle BEFORE each suite, including the first "
+                         "(laptops throttle; every suite should start from the "
+                         "same thermal state, and suite 1 would otherwise start "
+                         "on a GPU warmed by whatever ran before it)")
     args = ap.parse_args()
 
     busy = gpu_busy_warning()
@@ -355,8 +357,11 @@ def main():
         out.append("> WARNING: GPU was shared with other processes during this run.\n")
     if not HAS_TRITON:
         out.append("> triton not installed; skipping triton columns.\n")
-    for i, (name, fn) in enumerate(suites.items()):
-        if i and args.cooldown:
+    for _i, (name, fn) in enumerate(suites.items()):
+        # Cool before EVERY suite, the first included: otherwise suite 1 starts
+        # on a GPU still warm from the test suite or a previous run, which is
+        # exactly the bias the flag exists to remove.
+        if args.cooldown:
             print(f"cooling down {args.cooldown}s...", flush=True)
             time.sleep(args.cooldown)
         print(f"running {name}...", flush=True)

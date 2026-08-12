@@ -1,31 +1,65 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 340" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-  <rect x="0.5" y="0.5" width="879" height="339" rx="14" fill="#0d1117" stroke="#30363d"/>
-  <text x="36" y="32" font-size="15" font-weight="700" fill="#e6edf3">memory-bound kernels, fp32 (GB/s)</text>
-  <text x="844" y="32" text-anchor="end" font-size="11.5" fill="#6e7681">higher is better</text>
-  <g font-size="11.5" fill="#8b949e">
-    <rect x="36" y="46" width="12" height="12" rx="3" fill="#f0883e"/><text x="54" y="56">torch</text>
-    <rect x="104" y="46" width="12" height="12" rx="3" fill="#2dd4bf"/><text x="122" y="56">newt</text>
-    <rect x="172" y="46" width="12" height="12" rx="3" fill="#818cf8"/><text x="190" y="56">triton</text>
-  </g>
-  <path d="M170 70 V288" stroke="#30363d" stroke-width="1.5"/>
-
-  <text x="158" y="90" text-anchor="end" font-size="12.5" fill="#e6edf3">fused softmax</text>
-  <text x="158" y="105" text-anchor="end" font-size="11" fill="#6e7681">4096x8192</text>
-  <rect x="170" y="76" width="547.2" height="18" rx="3" fill="#f0883e"/><text x="725" y="89" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">760</text>
-  <rect x="170" y="98" width="550.8" height="18" rx="3" fill="#2dd4bf"/><text x="729" y="111" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#e6edf3">765</text>
-  <rect x="170" y="120" width="552.2" height="18" rx="3" fill="#818cf8"/><text x="730" y="133" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">767</text>
-
-  <text x="158" y="162" text-anchor="end" font-size="12.5" fill="#e6edf3">layernorm fwd</text>
-  <text x="158" y="177" text-anchor="end" font-size="11" fill="#6e7681">4096x8192</text>
-  <rect x="170" y="148" width="450" height="18" rx="3" fill="#f0883e"/><text x="628" y="161" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">625</text>
-  <rect x="170" y="170" width="552.2" height="18" rx="3" fill="#2dd4bf"/><text x="730" y="183" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#e6edf3">767</text>
-  <rect x="170" y="192" width="550.1" height="18" rx="3" fill="#818cf8"/><text x="728" y="205" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">764</text>
-
-  <text x="158" y="234" text-anchor="end" font-size="12.5" fill="#e6edf3">vector add</text>
-  <text x="158" y="249" text-anchor="end" font-size="11" fill="#6e7681">64M elements</text>
-  <rect x="170" y="220" width="563" height="18" rx="3" fill="#f0883e"/><text x="741" y="233" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">782</text>
-  <rect x="170" y="242" width="559.4" height="18" rx="3" fill="#2dd4bf"/><text x="737" y="255" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#e6edf3">777</text>
-  <rect x="170" y="264" width="560.9" height="18" rx="3" fill="#818cf8"/><text x="739" y="277" font-size="11" font-family="ui-monospace,Consolas,monospace" fill="#8b949e">779</text>
-
-  <text x="440" y="318" text-anchor="middle" font-size="11.5" fill="#6e7681">same kernel source (nl vs tl), same config sweep; medians over 50 reps with the L2 cache flushed between reps: everyone saturates the bus</text>
+<rect x="0.5" y="0.5" width="879" height="339" rx="14" fill="#0d1117" stroke="#30363d"/>
+<text x="30" y="32" font-size="15" font-weight="700" fill="#e6edf3">memory-bound kernels: newt tracks Triton on every device</text>
+<text x="30" y="52" font-size="11.5" fill="#6e7681">fp32 GB/s, higher is better. Each panel has its own scale: absolute bandwidth differs 6.5x across these GPUs.</text>
+<rect x="700" y="24" width="12" height="12" rx="3" fill="#2dd4bf"/><text x="718" y="34" font-size="11.5" fill="#9aa4af">newt</text>
+<rect x="770" y="24" width="12" height="12" rx="3" fill="#818cf8"/><text x="788" y="34" font-size="11.5" fill="#9aa4af">triton</text>
+<rect x="26" y="70" width="272" height="240" rx="10" fill="#11161d" stroke="#30363d"/>
+<text x="40" y="92" font-size="12.5" font-weight="700" fill="#e6edf3">RTX PRO 5000 laptop</text>
+<text x="40" y="108" font-size="10.5" fill="#6e7681">sm_120, 110 W</text>
+<text x="40" y="135" font-size="10" fill="#9aa4af">vector add 128M</text>
+<rect x="40" y="142" width="152.0" height="13" rx="3" fill="#2dd4bf"/>
+<text x="198.0" y="152" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">787</text>
+<rect x="40" y="158" width="147.9" height="13" rx="3" fill="#818cf8"/>
+<text x="193.9" y="168" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">766</text>
+<text x="40" y="191" font-size="10" fill="#9aa4af">softmax 4096x8192</text>
+<rect x="40" y="198" width="148.5" height="13" rx="3" fill="#2dd4bf"/>
+<text x="194.5" y="208" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">769</text>
+<rect x="40" y="214" width="147.8" height="13" rx="3" fill="#818cf8"/>
+<text x="193.8" y="224" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">765</text>
+<text x="40" y="247" font-size="10" fill="#9aa4af">layernorm 4096x8192</text>
+<rect x="40" y="254" width="148.5" height="13" rx="3" fill="#2dd4bf"/>
+<text x="194.5" y="264" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">769</text>
+<rect x="40" y="270" width="147.4" height="13" rx="3" fill="#818cf8"/>
+<text x="193.4" y="280" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">763</text>
+<text x="40" y="298" font-size="10.5" fill="#2dd4bf">peak 787 GB/s</text>
+<rect x="312" y="70" width="272" height="240" rx="10" fill="#11161d" stroke="#30363d"/>
+<text x="326" y="92" font-size="12.5" font-weight="700" fill="#e6edf3">RTX 5090</text>
+<text x="326" y="108" font-size="10.5" fill="#6e7681">sm_120, 170 SMs</text>
+<text x="326" y="135" font-size="10" fill="#9aa4af">vector add 128M</text>
+<rect x="326" y="142" width="152.0" height="13" rx="3" fill="#2dd4bf"/>
+<text x="484.0" y="152" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">1568</text>
+<rect x="326" y="158" width="151.9" height="13" rx="3" fill="#818cf8"/>
+<text x="483.9" y="168" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">1567</text>
+<text x="326" y="191" font-size="10" fill="#9aa4af">softmax 4096x8192</text>
+<rect x="326" y="198" width="146.1" height="13" rx="3" fill="#2dd4bf"/>
+<text x="478.1" y="208" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">1507</text>
+<rect x="326" y="214" width="147.7" height="13" rx="3" fill="#818cf8"/>
+<text x="479.7" y="224" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">1524</text>
+<text x="326" y="247" font-size="10" fill="#9aa4af">layernorm 4096x8192</text>
+<rect x="326" y="254" width="146.5" height="13" rx="3" fill="#2dd4bf"/>
+<text x="478.5" y="264" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">1511</text>
+<rect x="326" y="270" width="145.6" height="13" rx="3" fill="#818cf8"/>
+<text x="477.6" y="280" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">1502</text>
+<text x="326" y="298" font-size="10.5" fill="#2dd4bf">peak 1568 GB/s</text>
+<rect x="598" y="70" width="272" height="240" rx="10" fill="#11161d" stroke="#30363d"/>
+<text x="612" y="92" font-size="12.5" font-weight="700" fill="#e6edf3">GB10 Grace Blackwell</text>
+<text x="612" y="108" font-size="10.5" fill="#6e7681">sm_121, unified LPDDR5X</text>
+<text x="612" y="135" font-size="10" fill="#9aa4af">vector add 128M</text>
+<rect x="612" y="142" width="150.7" height="13" rx="3" fill="#2dd4bf"/>
+<text x="768.7" y="152" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">241</text>
+<rect x="612" y="158" width="148.9" height="13" rx="3" fill="#818cf8"/>
+<text x="766.9" y="168" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">238</text>
+<text x="612" y="191" font-size="10" fill="#9aa4af">softmax 4096x8192</text>
+<rect x="612" y="198" width="151.4" height="13" rx="3" fill="#2dd4bf"/>
+<text x="769.4" y="208" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">242</text>
+<rect x="612" y="214" width="150.1" height="13" rx="3" fill="#818cf8"/>
+<text x="768.1" y="224" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">240</text>
+<text x="612" y="247" font-size="10" fill="#9aa4af">layernorm 4096x8192</text>
+<rect x="612" y="254" width="151.4" height="13" rx="3" fill="#2dd4bf"/>
+<text x="769.4" y="264" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">242</text>
+<rect x="612" y="270" width="148.9" height="13" rx="3" fill="#818cf8"/>
+<text x="766.9" y="280" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="#9aa4af">238</text>
+<text x="612" y="298" font-size="10.5" fill="#2dd4bf">peak 243 GB/s</text>
+<text x="440" y="326" text-anchor="middle" font-size="11.5" fill="#6e7681">across the 33 bandwidth-bound cells newt is within 2% of Triton everywhere, geomean 100.4%</text>
 </svg>
